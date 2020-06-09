@@ -1,31 +1,20 @@
-import axios from "axios";
-import { Parser } from "htmlparser2";
 import { promises as fs, constants } from "fs";
-
 import config from "./config";
-import Handler from "./utils/wuqimh";
+
 import { Worker } from "worker_threads";
 
-const chapterUrl = `${config.mainHost}/${config.chapterId}/`;
+import "colors";
 
-let colors = require("colors");
+const manga = require("./manhua/katui");
 
-(async () => {
-  const res = await axios.get(chapterUrl);
-  const handler = new Handler(onParseEnd, { chapterId: config.chapterId });
-  const parser = new Parser(handler);
-  parser.write(res.data);
-  parser.end();
-})();
+manga.getChapterList().then(onParseEnd);
 
-
-function onParseEnd(data: Array<{ url: string, text: string }>) {
+function onParseEnd(data: Array<ChapterItem>) {
   if (!data || !data.length) {
     return;
   }
-  // @ts-ignore
   console.log("开始下载...".green);
-  start(data);
+  start(data).then(() => console.log("等待下载"));
 }
 
 async function existsItem(path: string) {
@@ -46,35 +35,42 @@ async function createFolder() {
   }
 }
 
-async function start(data: Array<{ url: string, text: string }>) {
+async function start(data: Array<ChapterItem>) {
   await createFolder();
   const map = new Map<string, Worker>();
 
-  function onMessage(args: any) {
+  function onDownloadWorkerCompleted(args: WorkerTransferData) {
+    const worker = map.get(args.workerId);
     if (!data.length) {
-      return
+      map.delete(args.workerId);
+      worker?.terminate();
+      if (map.size === 0) {
+        console.log("下载完成".rainbow);
+      }
+      return;
     }
     const item = data.shift();
     if (item) {
-      map.get(args.index)?.postMessage({ index: args.index, ...item });
+      console.log(`下载：${item.text}  worker:${args.workerId}`.yellow);
+      worker?.postMessage({ workerId: args.workerId, ...item });
     }
   }
 
-  for (let i = 0; i < 1; i++) {
+  for (let i = 0; i < config.maxWorker; i++) {
     const worker = new Worker("./dist/download.js");
-    const key = (i + 1).toString();
-    worker.on("message", onMessage);
-    map.set(key, worker);
+    const workerId = `worker-${i + 1}`;
+    worker.on("message", onDownloadWorkerCompleted);
+    map.set(workerId, worker);
   }
 
-  for (let [key, worker] of map) {
+  for (let [workerId, worker] of map) {
     if (!data.length) {
       break;
     }
     const item = data.shift();
     if (item) {
-      console.log(`下载：${item.text}  worker:${key}`);
-      worker.postMessage({ index: key, ...item });
+      console.log(`下载：${item.text}  worker:${workerId}`.yellow);
+      worker.postMessage({ workerId, ...item });
     }
   }
 }

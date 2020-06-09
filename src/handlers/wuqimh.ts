@@ -1,5 +1,3 @@
-import { DefaultHandler } from "htmlparser2";
-
 export default class ChapterHelper {
   private readonly cb: (data: Array<{ url: string, text: string }>) => void;
   private readonly options: any;

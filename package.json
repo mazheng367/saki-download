@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "dev": "webpack"
+    "dev": "webpack --watch"
   },
   "dependencies": {
     "axios": "^0.19.2",

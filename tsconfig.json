@@ -10,7 +10,10 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "types": [
+      "./src/typings"
+    ]
   },
   "exclude": [
     "node_modules"
