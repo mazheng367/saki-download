@@ -7,7 +7,7 @@
     "dev": "webpack --watch"
   },
   "dependencies": {
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "colors": "^1.4.0",
     "htmlparser2": "^4.1.0",
     "iconv-lite": "^0.5.1"
